@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.ZonedDateTime;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +22,7 @@ public class JWTUtil {
     @Value("${org.zerock.jwt.secret}")   // application-property 설정된 값을 불러오는 @
     private String key;
 
-    private final SecretKey secretKey = Keys.hmacShaKeyFor(key.getBytes());
+//    private final SecretKey secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode("hello1234567890abcdefghijklmnopqrstuvwxyz"));
 
     public String generateToken(Map<String, Object> valueMap, int days) {
         log.info("generateKey....." + key);
@@ -45,28 +46,25 @@ public class JWTUtil {
 //                .expiration(Date.from(ZonedDateTime.now().plusMinutes(time).toInstant()))
 //                .compact();
 
-//        return Jwts.builder()
-//                .setHeader(headers)
-//                .setClaims(payload)
-//                .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
-//                .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(time).toInstant()))
-//                .signWith(SignatureAlgorithm.HS256, key.getBytes())
-//                .compact();
-
         return Jwts.builder()
-                .header()
-                .add("typ", "JWT")
-                .add("alg", "256")
-                .and()
-                .claims(valueMap)
-                .signWith(secretKey)
-                .issuedAt(Date.from(ZonedDateTime.now().toInstant()))
-                .expiration(Date.from(ZonedDateTime.now().plusMinutes(time).toInstant()))
+                .setHeader(headers)
+                .setClaims(payload)
+                .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
+                .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(time).toInstant()))
+                .signWith(SignatureAlgorithm.HS256, key.getBytes())
                 .compact();
+
+//        return Jwts.builder()
+//                .header()
+//                .add("typ", "JWT")
+//                .add("alg", "256")
+//                .and()
+//                .claims(valueMap)
+//                .signWith(secretKey)
+//                .issuedAt(Date.from(ZonedDateTime.now().toInstant()))
+//                .expiration(Date.from(ZonedDateTime.now().plusMinutes(time).toInstant()))
+//                .compact();
     }
-
-
-
 
     // token 검증 메서드
     public Map<String, Object> validateToken(String token) throws JwtException {

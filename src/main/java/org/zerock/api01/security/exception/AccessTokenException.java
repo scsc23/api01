@@ -15,13 +15,9 @@ public class AccessTokenException extends Exception {
 
     public enum TOKEN_ERROR {
         UNACCEPT(401, "Token is null or too short"),
-
         BADTYPE(401, "Token type Bearer"),
-
         MALFORM(401, "Malformed Token"),
-
         BADSIGN(403, "BadSignatured Token"),
-
         EXPIRED(403, "Expired Token");
 
         private int status;
