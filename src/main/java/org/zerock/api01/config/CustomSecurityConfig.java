@@ -16,12 +16,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.zerock.api01.security.APIUserDetailsService;
 import org.zerock.api01.security.filter.APILoginFilter;
 import org.zerock.api01.security.filter.RefreshTokenFilter;
 import org.zerock.api01.security.filter.TokenCheckFilter;
 import org.zerock.api01.security.handler.APILoginSuccessHandler;
 import org.zerock.api01.util.JWTUtil;
+
+import java.util.Arrays;
 
 
 @Configuration
@@ -76,7 +81,7 @@ public class CustomSecurityConfig {
         // SuccessHandler 설정
         apiLoginFilter.setAuthenticationSuccessHandler(successHandler);
         // API 로 동작하는 모든 경로에 TokenCheckFilter 동작
-        http.addFilterBefore(tokenCheckFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(tokenCheckFilter(jwtUtil, apiUserDetailsService), UsernamePasswordAuthenticationFilter.class);
         // RefreshToken 호출 처리(TokenCheckFilter 다음 배치하는게 중요) "/refreshToken"
         http.addFilterBefore(new RefreshTokenFilter("/refreshToken", jwtUtil), TokenCheckFilter.class);
         // CSRF 토큰 비활성화
@@ -86,6 +91,8 @@ public class CustomSecurityConfig {
                 httpSecuritySessionManagementConfigurer.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS
                 ));
+
+
 
 //        // remember-me 설정
 //        http.rememberMe(httpSecurityRememberMeConfigurer -> {
@@ -105,12 +112,31 @@ public class CustomSecurityConfig {
 //            httpSecurityOauth2LoginConfigurer.successHandler(authenticationSuccessHandler());
 //        });
 
+        // CORS 설정 적용
+        http.cors(httpSecurityCorsConfigurer -> {
+            httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource());
+        });
+
         return http.build();
     }
 
+    // CORS 필터 @Bean 설정
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+        // 접근할 URL 을 지정하여 처리 지정한 대상만 접근 가능, "*" 는 모든 주소로의 접근을 허용
+        corsConfiguration.setAllowedOriginPatterns(Arrays.asList("http://localhost:8000"));
+        corsConfiguration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE"));
+        corsConfiguration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        corsConfiguration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration); // "/**" 하위 모든 폴더
+        return source;
+    }
+
     // Token Check Filter 생성
-    private TokenCheckFilter tokenCheckFilter (JWTUtil jwtUtil) {
-        return new TokenCheckFilter(jwtUtil);
+    private TokenCheckFilter tokenCheckFilter (JWTUtil jwtUtil, APIUserDetailsService apiUserDetailsService) {
+        return new TokenCheckFilter(apiUserDetailsService, jwtUtil);
     }
 //    @Bean
 //    public AuthenticationSuccessHandler authenticationSuccessHandler() {
